@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>TheWescan — Start Scan</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>TheWescan</h1>
+    <p>Enter a target URL (lab targets only). Check the consent box to proceed.</p>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for msg in messages %}
+            <li>{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    <form action="/start-scan" method="post">
+      <label>Target URL: <input type="text" name="target" placeholder="http://localhost/dvwa/" required></label>
+      <label>Depth: <input type="number" name="depth" value="1" min="0" max="3"></label>
+      <label><input type="checkbox" name="consent" required> I have permission to scan this target (lab only)</label>
+      <button type="submit">Start Scan</button>
+    </form>
+
+    <hr>
+    <h3>Local dev tips</h3>
+    <ul>
+      <li>Use DVWA at <code>http://localhost/dvwa/</code> as a safe testing target.</li>
+      <li>Run the app: <code>python app.py</code> or in PowerShell: <code>$env:FLASK_APP='app.py'; python -m flask run</code></li>
+    </ul>
+  </div>
+</body>
+</html>

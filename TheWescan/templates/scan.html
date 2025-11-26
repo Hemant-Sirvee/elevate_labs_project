@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Scan {{ job.id }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* make logs box look nicer and take full width */
+    #logs { background:#04101a; padding:12px; border-radius:6px; max-height:360px; overflow:auto; white-space:pre-wrap; font-family:monospace; }
+    .hidden { display:none; }
+    .btn { display:inline-block; padding:8px 12px; border-radius:6px; background:#6ee7b7; color:#012; text-decoration:none; margin-bottom:12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Scan: {{ job.target }}</h1>
+    <p>Status: <span id="status">{{ job.status }}</span></p>
+    <p>Findings: <span id="count">{{ (job.findings|length) if job.findings else 0 }}</span></p>
+
+    <a id="download-link" class="btn hidden" href="/scan/{{ job.id }}/download">Download PDF Report</a>
+
+    <h3 id="logs-title">Logs</h3>
+    <pre id="logs">{{ job.logs or '' }}</pre>
+
+    <div id="findings-section" class="hidden">
+      <h3>Subdomains</h3>
+      <div id="subdomains-container"></div>
+
+      <h3>Findings</h3>
+      <div id="findings-container"></div>
+    </div>
+
+    <script>
+      const jobId = "{{ job.id }}";
+
+      async function loadFindingsAndSubs() {
+        // Fetch the current scan page endpoint (server provides template-rendered values too).
+        const resp = await fetch(`/scan/${jobId}/status`);
+        const data = await resp.json();
+        // Only proceed when show_findings = true
+        if (!data.show_findings) return;
+
+        // fetch findings and subdomains by reloading template endpoint as JSON isn't exposing them.
+        // We'll fetch the /scan/<id> HTML and parse tables, simpler: create an API or reuse existing DB query route.
+        // For now we'll request a helper endpoint we will create: /scan/<id>/data (but if not present, use full page reload)
+        try {
+          const api = await fetch(`/scan/${jobId}?_json=1`);
+          if (api.ok) {
+            const payload = await api.json();
+            // populate UI
+            document.getElementById('subdomains-container').innerHTML = renderSubdomains(payload.subdomains);
+            document.getElementById('findings-container').innerHTML = renderFindings(payload.findings);
+            document.getElementById('download-link').classList.remove('hidden');
+          } else {
+            // fallback: reload the page to show findings
+            location.reload();
+          }
+        } catch (e) {
+          console.error("fetch findings error", e);
+          location.reload();
+        }
+      }
+
+      function renderSubdomains(subs) {
+        if (!subs || subs.length === 0) return '<p>No subdomains recorded.</p>';
+        let html = '<table class="table"><thead><tr><th>Hostname</th><th>IP(s)</th><th>When</th></tr></thead><tbody>';
+        for (const s of subs) {
+          html += `<tr><td>${s.hostname}</td><td>${s.ip || 'None'}</td><td>${s.created_at || ''}</td></tr>`;
+        }
+        html += '</tbody></table>';
+        return html;
+      }
+
+      function renderFindings(findings) {
+        if (!findings || findings.length === 0) return '<p>No findings.</p>';
+        let html = '<table class="table"><thead><tr><th>Type</th><th>URL</th><th>Param</th><th>Severity</th><th>When</th></tr></thead><tbody>';
+        for (const f of findings) {
+          const sevClass = (f.severity === 'High') ? 'sev-high' : (f.severity === 'Medium' ? 'sev-med' : 'sev-low');
+          html += `<tr><td>${f.vuln_type}</td><td>${f.url}</td><td>${f.param || ''}</td><td class="${sevClass}">${f.severity}</td><td>${f.created_at || ''}</td></tr>`;
+        }
+        html += '</tbody></table>';
+        return html;
+      }
+
+      async function poll(){
+        const r = await fetch(`/scan/${jobId}/status`);
+        const d = await r.json();
+        document.getElementById('status').innerText = d.status;
+        document.getElementById('count').innerText = d.findings_count;
+        // show logs while running; switch to findings when finished
+        const showFindings = !!d.show_findings;
+        if (!showFindings) {
+          document.getElementById('logs-title').classList.remove('hidden');
+          document.getElementById('logs').classList.remove('hidden');
+          document.getElementById('findings-section').classList.add('hidden');
+          document.getElementById('logs').innerText = d.logs.join('\n');
+        } else {
+          document.getElementById('logs-title').classList.add('hidden');
+          document.getElementById('logs').classList.add('hidden');
+          document.getElementById('findings-section').classList.remove('hidden');
+          // load findings and subs (via helper JSON endpoint)
+          await loadFindingsAndSubs();
+        }
+
+        if(!showFindings) setTimeout(poll, 2000);
+      }
+
+      // initial poll
+      setTimeout(poll, 800);
+    </script>
+  </div>
+</body>
+</html>

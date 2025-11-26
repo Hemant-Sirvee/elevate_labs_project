@@ -1,0 +1,14 @@
+body{font-family:Inter, Roboto, Arial, sans-serif;background:#0f1724;color:#e6eef8;padding:20px}
+.container{max-width:1000px;margin:0 auto;background:#0b1220;padding:20px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+h1{color:#6ee7b7}
+input[type=text], input[type=number]{width:100%;padding:8px;margin:6px 0;border-radius:4px;border:1px solid #24303f;background:#07101a;color:#e6eef8}
+button{background:#6ee7b7;border:none;padding:10px 16px;border-radius:6px;cursor:pointer}
+pre{background:#07101a;padding:12px;border-radius:6px;max-height:360px;overflow:auto}
+label{display:block;margin:8px 0}
+a { color: #9be7d8; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.table { width:100%; border-collapse: collapse; margin-top: 12px; }
+.table th, .table td { border: 1px solid #21313f; padding: 8px; text-align: left; }
+.sev-high { color: #ff6b6b; font-weight: bold; }
+.sev-med { color: #ffd166; }
+.sev-low { color: #9be7d8; }
